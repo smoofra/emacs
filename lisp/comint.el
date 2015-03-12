@@ -1989,6 +1989,12 @@ Make backspaces delete the previous character."
 	(set-marker delete-end nil))
       (widen))))
 
+(defun comint-copy-text-property (begin end src dest)
+  (while (< begin end)
+    (put-text-property begin (1+ begin) dest
+                       (get-text-property begin src))
+    (setq begin (1+ begin))))
+
 ;; The purpose of using this filter for comint processes
 ;; is to keep comint-last-input-end from moving forward
 ;; when output is inserted.
@@ -2077,11 +2083,14 @@ Make backspaces delete the previous character."
 		  (add-text-properties prompt-start (point)
 				       '(read-only t front-sticky (read-only)))))
 	      (when comint-last-prompt
-		(remove-text-properties (car comint-last-prompt)
-					(cdr comint-last-prompt)
-					'(font-lock-face)))
+                (comint-copy-text-property
+                 (car comint-last-prompt) (cdr comint-last-prompt)
+                 'comint-saved-face 'font-lock-face))
+
 	      (setq comint-last-prompt
 		    (cons (copy-marker prompt-start) (point-marker)))
+              (comint-copy-text-property
+               prompt-start (point) 'font-lock-face 'comint-saved-face)
 	      (add-text-properties prompt-start (point)
 				   '(rear-nonsticky t
 				     font-lock-face comint-highlight-prompt)))
